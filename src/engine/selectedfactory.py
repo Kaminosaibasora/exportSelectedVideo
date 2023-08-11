@@ -8,12 +8,47 @@ import subprocess
 class SelectedFactory :
     def __init__(self) :
         #INIT
-        self.videopath = ""
-        self.fileout = "./file_out/"
+        self.videopath   = ""
+        self.namefile    = ""
+        self.fileout     = "./file_out/"
+        self.output_path = "./file_out/"
     
     def loadVideo(self, video_path, output_path = "./file_out/"):
-        self.videopath = video_path
-        print("load")
+        self.videopath   = video_path
+        self.output_path = output_path
+        self.namefile = video_path.split("/")[-1]
+        if not self.isMkvVideo():
+            self.convertVideoToMkv()
+        print(f"LOAD\nvideo : {self.namefile}")
+    
+    def isMkvVideo(self):
+        if self.namefile.split(".")[-1] != "mkv":
+            return False
+        return True
+
+    def convertVideoToMkv(self):
+        # TODO : trouver un moyen pour automatiser la détection des pistes audio et de sous-titre
+        newvideopath = f"{self.fileout}temp/{self.namefile.split('.')[0]}.mkv"
+        print(newvideopath)
+        commande = [
+            "ffmpeg",
+            "-i", self.videopath,   # Fichier d'entrée
+            "-c:v", "copy",         # Codec vidéo
+            "-c:a", "copy",         # Codec audio
+            "-c:s", "copy",         # piste de sous-titre
+            "-map", "0:0",
+            "-map", "0:1",
+            "-map", "0:2",
+            "-map", "0:3",
+            "-map", "0:4",
+            newvideopath # Fichier de sortie au format MKV
+        ]
+        run = subprocess.run(commande)
+        print(run.stdout)
+        print(run.stderr)
+        self.videopath = newvideopath
+        self.namefile = f"{self.namefile.split('.')[0]}.mkv"
+        print("Convert effected")
 
     def info_video(self):
         """Utilise mkvinfo pour récupérer les numéros de pistes des différentes parties d'une vidéo
@@ -154,6 +189,6 @@ class SelectedFactory :
 
 if __name__ == '__main__':
     sf = SelectedFactory()
-    sf.loadVideo("./file_in/WINGMAN_01_SCN.Title3.mkv")
-    sf.assembly_video_audio_subtitle(2, 3)
-    # sf.loadVideo("./file_in/Super Gals episode 1.mp4")
+    # sf.loadVideo("./file_in/WINGMAN_01_SCN.Title3.mkv")
+    # sf.assembly_video_audio_subtitle(2, 3)
+    sf.loadVideo("./file_in/Super Gals episode 1.mp4")
