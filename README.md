@@ -8,4 +8,7 @@ Exporte une vidéo MP4 "simple" selon la piste audio et de sous-titre choisie.
 - mettre en place un installateur pour importer toutes les dépendances
 - mettre en place des logs
 - metttre en place un système de gestion des erreures
-- mettre en place un système de copie vers dossier file_in des vidéos traités via interface graphique
++ mettre en place un système de copie vers dossier file_in des vidéos traités via interface graphique
+- remettre tous les paths à partir du même point
+- gérer les noms des fichiers exporté finaux
+- mettre en place un sustème d'animation pour l'atente et une pop up de validation à la fin 

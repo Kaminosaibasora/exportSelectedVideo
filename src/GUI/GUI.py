@@ -4,6 +4,9 @@ from PyQt5.QtCore import QDir, Qt, QUrl, QSize
 from PyQt5.QtGui import QIcon, QPixmap
 sys.path.append('./engine')
 from selectedfactory import SelectedFactory
+import shutil
+import threading
+import os
 
 class GUI(QMainWindow):
     def __init__(self, sf, parent=None):
@@ -25,7 +28,7 @@ class GUI(QMainWindow):
         self.info               = QLabel("INFO")
 
         self.pathButton.clicked.connect(self.choosefilevideo)
-
+        self.generateVideo.clicked.connect(self.generateVideoFinal)
 
         # LAYOUT
         layout = QGridLayout()
@@ -64,6 +67,40 @@ class GUI(QMainWindow):
     
     def loadVideo(self, path):
         self.labelVideo.setText(path)
+        shutil.copy(path[1:], "."+self.sf.fileout + "temp")
+        path = "."+self.sf.fileout + "temp/" + path.split("/")[-1]
         self.sf.loadVideo(path)
         infoVideo = self.sf.info_video()
         print(infoVideo)
+        itemST = []
+        for i in infoVideo['audio'] :
+            itemST += [f"{i[0]} - {i[1]}"]
+        self.selectedSoundTrack.addItems(itemST)
+        itemST = [""]
+        for i in infoVideo['subtt'] :
+            itemST += [f"{i[0]} - {i[1]}"]
+        self.selectedSubTTrack.addItems(itemST)
+        self.sf.export_video_track()
+        self.sf.export_audio_track()
+        self.sf.export_subtitles()
+
+    def generateVideoFinal(self):
+        t = threading.Thread(target=self.threadGenerate)
+        t.start()
+
+    def threadGenerate(self):
+        snt = int(self.selectedSoundTrack.currentText().split(" - ")[0])
+        sbt = self.selectedSubTTrack.currentText().split(" - ")[0]
+        if sbt == "":
+            sbt = None
+        else :
+            sbt = int(sbt)
+        print(snt)
+        print(sbt)
+        self.sf.assembly_video_audio_subtitle(snt, sbt)
+        print("suppression des fichiers de construction")
+        shutil.rmtree(self.sf.fileout + "temp")
+        self.selectedSoundTrack.clear()
+        self.selectedSubTTrack.clear()
+        self.labelVideo.setText("")
+        return
