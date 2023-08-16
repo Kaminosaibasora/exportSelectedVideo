@@ -4,6 +4,7 @@ from PyQt5.QtCore import QDir, Qt, QUrl, QSize
 from PyQt5.QtGui import QIcon, QPixmap
 sys.path.append('./engine')
 from selectedfactory import SelectedFactory
+from animationWidget import AnimationWidget
 import shutil
 import threading
 import os
@@ -46,6 +47,8 @@ class GUI(QMainWindow):
         wid.setLayout(layout)
         self.resize(1200, 720)
 
+        self.loadingScreen = AnimationWidget("./GUI/static/loading.gif", 800, 600)
+
     def choosefilevideo(self):
         try :
             valid = False
@@ -66,10 +69,22 @@ class GUI(QMainWindow):
             error.setWindowTitle("Erreur de validation")
     
     def loadVideo(self, path):
+        self.loadingScreen.startAnimation()
         self.labelVideo.setText(path)
-        shutil.copy(path[1:], "."+self.sf.fileout + "temp")
-        path = "."+self.sf.fileout + "temp/" + path.split("/")[-1]
+        if os.path.exists(self.sf.fileout + "temp"):
+            shutil.rmtree(self.sf.fileout + "temp")
+        os.mkdir(self.sf.fileout + "temp")
+        shutil.copy(path[1:], self.sf.fileout + "temp")
+        path = self.sf.fileout + "temp/" + path.split("/")[-1]
         self.sf.loadVideo(path)
+
+        load = threading.Thread(target=self.threadLoad)
+        load.start()
+        while load.is_alive():
+            pass
+        self.loadingScreen.stopAnimation()
+
+    def threadLoad(self):
         infoVideo = self.sf.info_video()
         print(infoVideo)
         itemST = []
@@ -83,10 +98,14 @@ class GUI(QMainWindow):
         self.sf.export_video_track()
         self.sf.export_audio_track()
         self.sf.export_subtitles()
+        return
 
     def generateVideoFinal(self):
-        t = threading.Thread(target=self.threadGenerate)
-        t.start()
+        generate = threading.Thread(target=self.threadGenerate)
+        generate.start()
+        while generate.is_alive():
+            pass
+        self.messageValidation()
 
     def threadGenerate(self):
         snt = int(self.selectedSoundTrack.currentText().split(" - ")[0])
@@ -103,4 +122,18 @@ class GUI(QMainWindow):
         self.selectedSoundTrack.clear()
         self.selectedSubTTrack.clear()
         self.labelVideo.setText("")
+        return
+    
+    def messageValidation(self):
+        msgBox = QMessageBox()
+        msgBox.setText("Video générée avec succès")
+        msgBox.setWindowTitle("SUCCESS")
+        msgBox.exec()
+
+    def loadingAnimation(self):
+        # self.loadingScreen = AnimationWidget("./GUI/static/loading.gif", 800, 600)
+        self.loadingScreen.startAnimation()
+        # while self.isLoading :
+        #     pass
+        # self.loadingScreen.stopAnimation()
         return

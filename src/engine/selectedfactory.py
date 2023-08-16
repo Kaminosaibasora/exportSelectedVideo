@@ -5,11 +5,11 @@ class SelectedFactory :
         # ========= INIT =========
         self.videopath   = ""
         self.namefile    = ""
-        self.fileout     = "./file_out/"
-        self.output_path = "./file_out/"
+        self.fileout     = "../file_out/"
+        self.output_path = "../file_out/"
         # ========================
     
-    def loadVideo(self, video_path, output_path = "./file_out/"):
+    def loadVideo(self, video_path, output_path = "../file_out/"):
         self.videopath   = video_path
         self.output_path = output_path
         self.namefile = video_path.split("/")[-1]
@@ -149,8 +149,8 @@ class SelectedFactory :
     def assembly_video_audio_subtitle(self, nv, nsb = None):
         video_path  = f"{self.fileout}temp/video{0}.mkv"
         audio_path  = f"{self.fileout}temp/audio{nv}.wav"
-        output_path = f"{self.fileout}file.mkv"
-        # Commande pour assembler la vidéo, la piste audio et les sous-titres avec mkvmerge
+        output_path = f"{self.fileout}temp/file.mkv"
+        # Commande pour assembler la vidéoet  la piste audio et les sous-titres avec mkvmerge
         command = [
             "mkvmerge",
             "-o", output_path,
@@ -160,17 +160,16 @@ class SelectedFactory :
         run = subprocess.run(command, capture_output=True, text=True)
         print(run.stdout)
         print(run.stderr)
-        subtitle_path = ""
         if nsb != None :
             subtitle_path   = f"{self.fileout}temp/subtt{nsb}.idx"
             video_path      = output_path
-            subtitles_path  = subtitle_path
-            output_path     = f"{self.fileout}fileFinal.mkv"
+            output_path     = f"{self.fileout}{self.namefile}"
+            print(">>>>>>>>>>>>>>>>>>>"+output_path)
             # Commande pour incruster les sous-titres IDX dans la vidéo MKV avec ffmpeg
             command = [
                 "ffmpeg",
                 "-i", video_path,
-                "-i", subtitles_path,
+                "-i", subtitle_path,
                 "-filter_complex", "[0:v][1:s]overlay[v]",
                 "-map", "[v]",
                 "-map", "0:a",
@@ -183,7 +182,7 @@ class SelectedFactory :
 
 if __name__ == '__main__':
     sf = SelectedFactory()
-    sf.loadVideo("./file_in/WINGMAN_01_SCN.Title3.mkv")
+    sf.loadVideo("../file_in/WINGMAN_01_SCN.Title3.mkv")
     print(sf.info_video())
     # sf.assembly_video_audio_subtitle(2, 3)
     # sf.loadVideo("./file_in/Super Gals episode 1.mp4")
