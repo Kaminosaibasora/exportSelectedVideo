@@ -23,24 +23,28 @@ class SelectedFactory :
         return True
 
     def convertVideoToMkv(self):
-        # TODO : trouver un moyen pour automatiser la détection des pistes audio et de sous-titre
         newvideopath = f"{self.fileout}temp/{self.namefile.split('.')[0]}.mkv"
         print(newvideopath)
+        commande = [
+            "ffmpeg",
+            "-i", self.videopath,   # Fichier d'entrée
+        ]
+        run = subprocess.run(commande, capture_output=True, text=True)
         commande = [
             "ffmpeg",
             "-i", self.videopath,   # Fichier d'entrée
             "-c:v", "copy",         # Codec vidéo
             "-c:a", "copy",         # Codec audio
             "-c:s", "copy",         # piste de sous-titre
-            "-map", "0:0",
-            "-map", "0:1",
-            "-map", "0:2",
-            "-map", "0:3",
-            "-map", "0:4",
-            newvideopath # Fichier de sortie au format MKV
         ]
+        video_data = run.stderr.split("\n")
+        for line in video_data :
+            if "Stream" in line and ("Video" in line or "Audio" in line or "Subtitle" in line) and not "png" in line :
+                print(line)
+                commande += ["-map", line[10:13]]
+        commande += [newvideopath]
         run = subprocess.run(commande)
-        print(run.stdout)
+        # print(run.stdout)
         print(run.stderr)
         self.videopath = newvideopath
         self.namefile = f"{self.namefile.split('.')[0]}.mkv"
@@ -56,8 +60,8 @@ class SelectedFactory :
             print(self.videopath[1:3])
             command = [self.videopath[1:3]]
             run = subprocess.run(command, capture_output=True, text=True)
-            print(run.stdout)
-            print(run.stderr)
+            # print(run.stdout)
+            # print(run.stderr)
             self.videopath = self.videopath[4:]
             print(self.videopath)
         command = [
@@ -103,7 +107,7 @@ class SelectedFactory :
                     f"{n[0]}:{self.fileout}temp/subtt{n[0]}.srt"
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
-                print(run.stdout)
+                # print(run.stdout)
                 print(run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
@@ -122,7 +126,7 @@ class SelectedFactory :
                     f"{n[0]}:{self.fileout}temp/audio{n[0]}.wav"
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
-                print(run.stdout)
+                # print(run.stdout)
                 print(run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
@@ -141,7 +145,7 @@ class SelectedFactory :
                     f"{n}:{self.fileout}temp/video{n}.mkv"
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
-                print(run.stdout)
+                # print(run.stdout)
                 print(run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
@@ -176,13 +180,13 @@ class SelectedFactory :
                 output_path
             ]
             run = subprocess.run(command, capture_output=True, text=True)
-            print(run.stdout)
+            # print(run.stdout)
             print(run.stderr)
         print("Assemblage terminé avec succès.")
 
 if __name__ == '__main__':
     sf = SelectedFactory()
-    sf.loadVideo("../file_in/WINGMAN_01_SCN.Title3.mkv")
-    print(sf.info_video())
+    # sf.loadVideo("../file_in/WINGMAN_01_SCN.Title3.mkv")
+    # print(sf.info_video())
     # sf.assembly_video_audio_subtitle(2, 3)
-    # sf.loadVideo("./file_in/Super Gals episode 1.mp4")
+    sf.loadVideo("../file_in/Super Gals episode 1.mp4")
