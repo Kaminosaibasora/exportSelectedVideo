@@ -1,14 +1,13 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QMessageBox, QAction, QFileDialog, QPushButton, QLabel, QLineEdit, QComboBox
-from PyQt5.QtCore import QDir, Qt, QUrl, QSize
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QMessageBox,  QFileDialog, QPushButton, QLabel, QComboBox, QProgressBar
+from PyQt5.QtCore import  Qt, QThread, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtGui import QIcon, QPixmap
+from loadworker import LoadWorker
 sys.path.append('./engine')
 from selectedfactory import SelectedFactory
-from animationWidget import AnimationWidget
 import shutil
-import threading
 import os
-import time
+from generateworker import GenerateWorker
 
 class GUI(QMainWindow):
     def __init__(self, sf, parent=None):
@@ -25,7 +24,7 @@ class GUI(QMainWindow):
         self.iconVideo.setPixmap(videoPixMap)
         self.iconSound.setPixmap(soundPixMap)
         self.iconSubtt.setPixmap(subttPixMap)
-        # self.iconVideo.resize(videoPixMap.width()/2, videoPixMap.height()/2) # TODO : trouver une méthode qui fonctionne
+
         self.labelVideo         = QLabel        ("path video")
         self.pathButton         = QPushButton   ("Choose File")
         self.labelSoundTrack    = QLabel        ("Sound Track")
@@ -34,9 +33,28 @@ class GUI(QMainWindow):
         self.selectedSubTTrack  = QComboBox     ()
         self.generateVideo      = QPushButton   ("Generate")
         self.info               = QLabel        ("Choisissez un fichier\n")
+        self.progress_bar       = QProgressBar  (self)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setMaximum(5)
 
         self.pathButton.clicked.connect(self.choosefilevideo)
         self.generateVideo.clicked.connect(self.generateVideoFinal)
+
+        self.work_request = Signal(int)
+
+        self.loadWorker = LoadWorker(self)
+        self.worker_thread = QThread()
+        self.loadWorker.progress.connect(self.update_progress)
+        self.loadWorker.completed.connect(self.complete)
+        self.loadWorker.moveToThread(self.worker_thread)
+        self.worker_thread.start()
+
+        self.generateWorker = GenerateWorker(self)
+        self.generateThread = QThread()
+        self.generateWorker.progress.connect(self.update_progress)
+        self.generateWorker.completed.connect(self.complete)
+        self.generateWorker.moveToThread(self.generateThread)
+        self.generateThread.start()
 
         # LAYOUT
         layout = QGridLayout()
@@ -50,13 +68,12 @@ class GUI(QMainWindow):
         layout.addWidget(self.labelSubTTrack,       1, 2, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.selectedSubTTrack,    2, 2)
         layout.addWidget(self.generateVideo,        2, 3)
-        layout.addWidget(self.info,                 3, 0, 2, 4)
+        layout.addWidget(self.info,                 3, 0, 2, 2)
+        layout.addWidget(self.progress_bar,         3, 2, 2, 2)
         wid = QWidget(self)
         self.setCentralWidget(wid)
         wid.setLayout(layout)
-        self.resize(1200, 720)
-
-        
+        self.resize(1200, 720)        
 
     def choosefilevideo(self):
         try :
@@ -80,6 +97,7 @@ class GUI(QMainWindow):
     
     def loadVideo(self, path):
         self.labelVideo.setText(path)
+        self.labelVideo.update()
         self.addInfo(f"Préparation des dossiers temporaires")
         if os.path.exists(self.sf.fileout + "temp"):
             shutil.rmtree(self.sf.fileout + "temp")
@@ -89,60 +107,14 @@ class GUI(QMainWindow):
         self.addInfo(f"Chargement de la vidéo")
         self.sf.loadVideo(path)
         self.addInfo(f"Séparation des Track")
-        # self.threadLoad()
-        load = threading.Thread(target=self.threadLoad)
-        load.start()
-        while load.is_alive():
-            print("...")
-            self.addInfo(f"...")
-            time.sleep(1)
-        load.join()
-        # self.addInfo(f"SUCCESS")
-
-    def threadLoad(self):
-        infoVideo = self.sf.info_video()
-        print(infoVideo)
-        itemST = []
-        for i in infoVideo['audio'] :
-            itemST += [f"{i[0]} - {i[1]}"]
-        self.selectedSoundTrack.addItems(itemST)
-        itemST = [""]
-        for i in infoVideo['subtt'] :
-            itemST += [f"{i[0]} - {i[1]}"]
-        self.selectedSubTTrack.addItems(itemST)
-        self.sf.export_video_track()
-        self.sf.export_audio_track()
-        self.sf.export_subtitles()
-        self.addInfo(f"SUCCESS")
-        return
+        self.loadWorker.do_work()
 
     def generateVideoFinal(self):
-        generate = threading.Thread(target=self.threadGenerate)
-        generate.start()
-        while generate.is_alive():
-            pass
-        self.messageValidation()
-
-    def threadGenerate(self):
-        snt = int(self.selectedSoundTrack.currentText().split(" - ")[0])
-        sbt = self.selectedSubTTrack.currentText().split(" - ")[0]
-        if sbt == "":
-            sbt = None
-        else :
-            sbt = int(sbt)
-        print(snt)
-        print(sbt)
-        self.sf.assembly_video_audio_subtitle(snt, sbt)
-        print("suppression des fichiers de construction")
-        shutil.rmtree(self.sf.fileout + "temp")
-        self.selectedSoundTrack.clear()
-        self.selectedSubTTrack.clear()
-        self.labelVideo.setText("")
-        return
+        self.generateWorker.do_work()
     
     def messageValidation(self):
         msgBox = QMessageBox()
-        msgBox.setText("Video générée avec succès")
+        msgBox.setText("Video généréee avec succès")
         msgBox.setWindowTitle("SUCCESS")
         msgBox.exec()
 
@@ -150,3 +122,10 @@ class GUI(QMainWindow):
         info = self.info.text()
         info += f"{message}\n"
         self.info.setText(info)
+        self.info.update()
+    
+    def update_progress(self, v):
+        self.progress_bar.setValue(v)
+
+    def complete(self, v):
+        self.progress_bar.setValue(0)

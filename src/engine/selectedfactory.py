@@ -74,7 +74,7 @@ class SelectedFactory :
             'audio' : [],
         }
         run = subprocess.run(command, capture_output=True, text=True)
-        print(run.stdout)
+        # print(run.stdout)
         print(run.stderr)
         data_run = run.stdout.split("\n")
         for i in range(len(data_run)):
@@ -85,11 +85,14 @@ class SelectedFactory :
                     j += 1
                     if "Langue" in data_run[j] :
                         langue = data_run[j].split(" ")[-1]
-                if "vid" in data_run[i+2] :
+                k = 1
+                while not "Type de piste" in data_run[i+k] :
+                    k+=1
+                if "vid" in data_run[i+k] :
                     pistes["video"] += [int(data_run[i][-2:-1])]
-                elif "audio" in data_run[i+2] :
+                elif "audio" in data_run[i+k] :
                     pistes["audio"] += [(int(data_run[i][-2:-1]), langue)]
-                elif "sous-titres" in data_run[i+2] :
+                elif "sous-titres" in data_run[i+k] :
                     pistes["subtt"] += [(int(data_run[i][-2:-1]), langue)]
         return pistes
     
@@ -163,12 +166,12 @@ class SelectedFactory :
         ]
         run = subprocess.run(command, capture_output=True, text=True)
         print(run.stdout)
-        print(run.stderr)
+        print(f"ERROR : {run.stderr}")
         if nsb != None :
             subtitle_path   = f"{self.fileout}temp/subtt{nsb}.idx"
             video_path      = output_path
             output_path     = f"{self.fileout}{self.namefile}"
-            print(">>>>>>>>>>>>>>>>>>>"+output_path)
+            print(">>>>>>>>>>>>>>>>>>>"+output_path+"\nstart merge")
             # Commande pour incruster les sous-titres IDX dans la vidéo MKV avec ffmpeg
             command = [
                 "ffmpeg",
@@ -180,9 +183,10 @@ class SelectedFactory :
                 output_path
             ]
             run = subprocess.run(command, capture_output=True, text=True)
-            # print(run.stdout)
+            print(run.stdout)
             print(run.stderr)
         print("Assemblage terminé avec succès.")
+        return
 
 if __name__ == '__main__':
     sf = SelectedFactory()
