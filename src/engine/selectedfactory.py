@@ -10,6 +10,12 @@ class SelectedFactory :
         # ========================
     
     def loadVideo(self, video_path, output_path = "../file_out/"):
+        """Enregistre tous les paths nécessaires au traitement de la vidéo.
+            Passe la vidéo au format MKV si ce n'est pas encore le cas.
+        Args:
+            video_path (str): Path complet de la vidéo
+            output_path (str, optional): Emplacement de sortie par défaut de la vidéo. Defaults to "../file_out/".
+        """
         self.videopath   = video_path
         self.output_path = output_path
         self.namefile = video_path.split("/")[-1]
@@ -23,6 +29,8 @@ class SelectedFactory :
         return True
 
     def convertVideoToMkv(self):
+        """Convertie une vidéo au format MKV et met à jour les paths.
+        """
         newvideopath = f"{self.fileout}temp/{self.namefile.split('.')[0]}.mkv"
         print(newvideopath)
         commande = [
@@ -45,7 +53,9 @@ class SelectedFactory :
         commande += [newvideopath]
         run = subprocess.run(commande)
         # print(run.stdout)
-        print(run.stderr)
+        if run.stderr != "None" :
+            print(f"ERROR >>> {run.stderr}")
+            raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         self.videopath = newvideopath
         self.namefile = f"{self.namefile.split('.')[0]}.mkv"
         print("Convert effected")
@@ -61,7 +71,9 @@ class SelectedFactory :
             command = [self.videopath[1:3]]
             run = subprocess.run(command, capture_output=True, text=True)
             # print(run.stdout)
-            # print(run.stderr)
+            if run.stderr != "" :
+                print(f"ERROR >>> {run.stderr}")
+                raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
             self.videopath = self.videopath[4:]
             print(self.videopath)
         command = [
@@ -75,7 +87,9 @@ class SelectedFactory :
         }
         run = subprocess.run(command, capture_output=True, text=True)
         # print(run.stdout)
-        print(run.stderr)
+        if run.stderr != "" :
+            print(f"ERROR >>> {run.stderr}")
+            raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         data_run = run.stdout.split("\n")
         for i in range(len(data_run)):
             if "mkvmerge" in data_run[i]:
@@ -111,7 +125,9 @@ class SelectedFactory :
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
                 # print(run.stdout)
-                print(run.stderr)
+                if run.stderr != "" :
+                    print(f"ERROR >>> {run.stderr}")
+                    raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
 
@@ -130,7 +146,9 @@ class SelectedFactory :
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
                 # print(run.stdout)
-                print(run.stderr)
+                if run.stderr != "" :
+                    print(f"ERROR >>> {run.stderr}")
+                    raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
 
@@ -149,11 +167,19 @@ class SelectedFactory :
                 ]
                 run = subprocess.run(command, capture_output=True, text=True)
                 # print(run.stdout)
-                print(run.stderr)
+                if run.stderr != "" :
+                    print(f"ERROR >>> {run.stderr}")
+                    raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         except Exception as e:
             print("Une erreur s'est produite :", e)
     
     def assembly_video_audio_subtitle(self, nv, nsb = None):
+        """Assemblage des différentes pistes de la vidéo finale.
+
+        Args:
+            nv (int): numéro de la piste de son
+            nsb (int, optional): numéro de la piste de sous-titre. Defaults to None.
+        """
         video_path  = f"{self.fileout}temp/video{0}.mkv"
         audio_path  = f"{self.fileout}temp/audio{nv}.wav"
         output_path = f"{self.fileout}temp/file.mkv"
@@ -166,12 +192,14 @@ class SelectedFactory :
         ]
         run = subprocess.run(command, capture_output=True, text=True)
         print(run.stdout)
-        print(f"ERROR : {run.stderr}")
+        if run.stderr != "" :
+            print(f"ERROR >>> {run.stderr}")
+            raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         if nsb != None :
             subtitle_path   = f"{self.fileout}temp/subtt{nsb}.idx"
             video_path      = output_path
             output_path     = f"{self.fileout}{self.namefile}"
-            print(">>>>>>>>>>>>>>>>>>>"+output_path+"\nstart merge")
+            print(">>> "+output_path+"\nstart merge")
             # Commande pour incruster les sous-titres IDX dans la vidéo MKV avec ffmpeg
             command = [
                 "ffmpeg",
@@ -184,13 +212,18 @@ class SelectedFactory :
             ]
             run = subprocess.run(command, capture_output=True, text=True)
             print(run.stdout)
-            print(run.stderr)
+            if run.stderr != "" :
+                print(f"ERROR >>> {run.stderr}")
+                raise Exception("Convert to MKV : FAILURE \n"+run.stderr)
         print("Assemblage terminé avec succès.")
         return
 
 if __name__ == '__main__':
     sf = SelectedFactory()
-    # sf.loadVideo("../file_in/WINGMAN_01_SCN.Title3.mkv")
-    # print(sf.info_video())
-    # sf.assembly_video_audio_subtitle(2, 3)
-    sf.loadVideo("../file_in/Super Gals episode 1.mp4")
+    sf.loadVideo("../file_in/WINGMAN_01_SCN.Title3.mkv")
+    print(sf.info_video())
+    sf.export_video_track()
+    sf.export_audio_track()
+    sf.export_subtitles()
+    sf.assembly_video_audio_subtitle(2, 3)
+    # sf.loadVideo("../file_in/Super Gals episode 1.mp4")

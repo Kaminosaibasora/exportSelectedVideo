@@ -1,13 +1,15 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QMessageBox,  QFileDialog, QPushButton, QLabel, QComboBox, QProgressBar
-from PyQt5.QtCore import  Qt, QThread, pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import  Qt, QThread, pyqtSignal as Signal, pyqtSlot as Slot, QCoreApplication
 from PyQt5.QtGui import QIcon, QPixmap
 from loadworker import LoadWorker
 sys.path.append('./engine')
 from selectedfactory import SelectedFactory
+from scrollLabel import ScrollLabel
 import shutil
 import os
 from generateworker import GenerateWorker
+import subprocess
 
 class GUI(QMainWindow):
     def __init__(self, sf, parent=None):
@@ -32,13 +34,18 @@ class GUI(QMainWindow):
         self.labelSubTTrack     = QLabel        ("Subtitle Track")
         self.selectedSubTTrack  = QComboBox     ()
         self.generateVideo      = QPushButton   ("Generate")
-        self.info               = QLabel        ("Choisissez un fichier\n")
+        # self.info               = QLabel        ("Choisissez un fichier\n")
+        self.info               = ScrollLabel()
         self.progress_bar       = QProgressBar  (self)
+        self.folderButton       = QPushButton   ("Open File Out Folder")
         self.progress_bar.setValue(0)
         self.progress_bar.setMaximum(5)
+        self.info.setText("Choisissez un fichier\n")
+        self.info.setMinimumHeight(300)
 
-        self.pathButton.clicked.connect(self.choosefilevideo)
-        self.generateVideo.clicked.connect(self.generateVideoFinal)
+        self.pathButton     .clicked.connect(self.choosefilevideo)
+        self.folderButton   .clicked.connect(self.openFolder)
+        self.generateVideo  .clicked.connect(self.generateVideoFinal)
 
         self.work_request = Signal(int)
 
@@ -69,7 +76,8 @@ class GUI(QMainWindow):
         layout.addWidget(self.selectedSubTTrack,    2, 2)
         layout.addWidget(self.generateVideo,        2, 3)
         layout.addWidget(self.info,                 3, 0, 2, 2)
-        layout.addWidget(self.progress_bar,         3, 2, 2, 2)
+        layout.addWidget(self.folderButton,         3, 2, 1, 2)
+        layout.addWidget(self.progress_bar,         4, 2, 1, 2)
         wid = QWidget(self)
         self.setCentralWidget(wid)
         wid.setLayout(layout)
@@ -111,6 +119,7 @@ class GUI(QMainWindow):
 
     def generateVideoFinal(self):
         self.generateWorker.do_work()
+        QCoreApplication.processEvents()
     
     def messageValidation(self):
         msgBox = QMessageBox()
@@ -126,6 +135,12 @@ class GUI(QMainWindow):
     
     def update_progress(self, v):
         self.progress_bar.setValue(v)
+        QCoreApplication.processEvents()
 
     def complete(self, v):
         self.progress_bar.setValue(0)
+    
+    def openFolder(self):
+        path = self.sf.fileout.replace('/', '\\')
+        print(path)
+        subprocess.Popen(f"explorer {os.getcwd()}\{path}")
