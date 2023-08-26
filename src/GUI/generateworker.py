@@ -28,8 +28,10 @@ class GenerateWorker(QObject):
         self.gui.addInfo(f"Début du merge")
 
         self.progress.emit(2)
-
-        self.gui.sf.assembly_video_audio_subtitle(snt, sbt)
+        try : 
+            self.gui.sf.assembly_video_audio_subtitle(snt, sbt)
+        except Exception as e:
+            print(e)
         self.gui.addInfo(f"SUCCESS")
 
         self.progress.emit(4)
