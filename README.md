@@ -17,11 +17,13 @@ Exporte une vidéo MP4 "simple" selon la piste audio et de sous-titre choisie.
 + revoir la disposition de l'interface
 + mettre en place un système de gestion des erreures
 + mettre en place des logs
-- empécher la fenêtre de ne pas répondre
+<!-- - empécher la fenêtre de ne pas répondre -->
 <!-- https://www.developpez.net/forums/d1333235/c-cpp/bibliotheques/qt/debuter/programme-ne-repond-pendant-chargement-d-qprogressbar/ -->
 <!-- https://www.developpez.net/forums/d1331300/c-cpp/bibliotheques/qt/debuter/lecture-d-fichier-lourd/#post7232463 -->
 <!-- https://qt-quarterly.developpez.com/qq-27/conserver-reactivite-ihm/ -->
 <!-- https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/ -->
 
+<!-- 
 ## TODO
 - mettre en place un installateur pour importer toutes les dépendances
+-->
